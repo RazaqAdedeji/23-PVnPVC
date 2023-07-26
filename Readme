@@ -1,0 +1,28 @@
+1. to create the eksctl cluster in region 1a and 1b of us-east-1 - eksctl create cluster --name proj23-cluster --region us-east-1 --nodegroup-name deployment-nodes --node-type t2.medium --nodes 2 --node-volume-size 10 --zones=us-east-1a,us-east-1b
+
+2. Dependencies to update CSI driver
+
+eksctl utils associate-iam-oidc-provider --cluster proj23-cluster --approve
+
+eksctl create iamserviceaccount \
+  --name ebs-csi-controller-sa \
+  --namespace kube-system \
+  --cluster proj23-cluster \
+  --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy \
+  --approve \
+  --role-only \
+  --role-name AmazonEKS_EBS_CSI_DriverRole
+
+eksctl create addon --name aws-ebs-csi-driver --cluster proj23-cluster --service-account-role-arn arn:aws:iam::858384426779:role/AmazonEKS_EBS_CSI_DriverRole --force
+
+3. To check why the pvc is pending: kubectl -n kube-system logs -l app=ebs-csi-controller
+
+4a. To check instance zone in table -  aws ec2 describe-instances --query "Reservations[*].Instances[*].{ID:InstanceId,AZ:Placement.AvailabilityZone}" --output table
+
+4b. To check volume in table - aws ec2 describe-volumes --query "Volumes[*].{ID:VolumeId,AZ:AvailabilityZone}" --output table
+
+5. If you want to access the Nginx pod on your local machine at port 2323, you can use the following command:
+kubectl port-forward <POD NAME> 2323:80.  2323 can be any number as your local machine as a big range of ip.
+
+
+NOTE: THE NGINX-POD KEEP CHANGING OVER THE COURSE OF IMPLEMENTING THE PROJECT, REFER TO THE DOCUMENTATION TO GET THE ACTUAL FILE.
